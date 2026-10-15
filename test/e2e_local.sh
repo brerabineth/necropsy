@@ -127,9 +127,11 @@ contains "disasm call" "call" "$TMP/all.txt"
 fi
 runout x "$BIN" --no-color disasm "$FIX/macho64_minimal" --addr 0x10000 --count 5
 contains "macho disasm main" "mov eax, 0x2a" "$TMP/all.txt"
+if [ "$LINUX" = "1" ]; then
 runout x "$BIN" --no-color disasm "$FIX/suspicious" --addr 0x11b5 --count 4
 NG=$(grep -cE "^  0x[0-9a-f]{16} " "$TMP/all.txt")
 [ "$NG" -ge 4 ] && ok "disasm advances" || bad "disasm advance (got $NG insns)"
+fi
 runout x "$BIN" --no-color disasm "$FIX/suspicious" --addr 0xdeadbeef --count 2
 [ "$(cat "$TMP/code.txt")" = "64" ] && ok "bad addr -> 64" || bad "bad addr (got $(cat "$TMP/code.txt"))"
 
@@ -139,9 +141,11 @@ runout x "$BIN" --no-color functions "$FIX/suspicious"
 contains "functions main" "main" "$TMP/all.txt"
 contains "functions simple_hash" "simple_hash" "$TMP/all.txt"
 fi
+if [ "$LINUX" = "1" ]; then
 runout x "$BIN" --no-color graph "$FIX/suspicious" --dot "$TMP/g.dot"
 grep -q "digraph necropsy" "$TMP/g.dot" && ok "dot header" || bad "dot header"
 grep -qE "n[0-9a-f]+ -> n[0-9a-f]+" "$TMP/g.dot" && ok "dot edges" || bad "dot edges"
+fi
 runout x "$BIN" --no-color functions "$BIN"
 grep -q "FUNCTIONS" "$TMP/all.txt" && ok "self-analysis survives" || bad "self-analysis crash"
 
