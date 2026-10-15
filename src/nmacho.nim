@@ -26,6 +26,8 @@ proc parseMacho*(b: Binary) =
   let d = b.data
   b.format = fmtMachO
   # canonical: bytes CF FA ED FE (LE) = MH_MAGIC_64
+  if d.len < 32:
+    raise necroFail("truncated Mach-O header")
   if d[0] == 0xFE and d[1] == 0xED and d[2] == 0xFA and d[3] == 0xCE:
     raise necroFail("32-bit Mach-O not supported (use the 64-bit sample)")
   if not (d[0] == 0xCF and d[1] == 0xFA and d[2] == 0xED and d[3] == 0xFE):

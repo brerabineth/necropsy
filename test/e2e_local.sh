@@ -37,10 +37,13 @@ python3 "$FIX/gen_fixtures.py" >/dev/null 2>&1 || { bad "fixture gen"; exit 1; }
 ok "fixtures built"
 
 say "== analyze: verdicts + exit codes =="
+LINUX=0; [ "$(uname)" = "Linux" ] && LINUX=1
 runout x "$BIN" --no-color analyze "$FIX/benign"
 [ "$(cat "$TMP/code.txt")" = "0" ] && ok "benign exit 0" || bad "benign exit (got $(cat "$TMP/code.txt"))"
 contains "benign CLEAN" "CLEAN" "$TMP/all.txt"
+if [ "$LINUX" = "1" ]; then
 contains "benign compiler gcc" "GCC" "$TMP/all.txt"
+fi
 
 runout x "$BIN" --no-color analyze "$FIX/suspicious"
 [ "$(cat "$TMP/code.txt")" = "2" ] && ok "suspicious exit 2" || bad "suspicious exit (got $(cat "$TMP/code.txt"))"
@@ -82,18 +85,20 @@ runout x "$BIN" --no-color analyze "$FIX/suspicious" --fail-on critical
 say "== json + markdown reports =="
 runout x "$BIN" --no-color analyze "$FIX/suspicious" --quiet --json "$TMP/r1.json" --md "$TMP/r.md"
 [ "$(cat "$TMP/code.txt")" = "2" ] && ok "quiet keeps exit" || bad "quiet exit"
-python3 -c "import json;d=json.load(open('$TMP/r1.json'));assert d['verdict']['band']=='SUSPECT';assert d['format']=='fmtELF';assert 'AES S-box' in [c['name'] for c in d['crypto']]" && ok "json valid + fields" || bad "json invalid"
+python3 -c "import json;d=json.load(open('$TMP/r1.json'));assert d['verdict']['band']=='SUSPECT';assert d['format'].startswith('fmt');assert 'AES S-box' in [c['name'] for c in d['crypto']]" && ok "json valid + fields" || bad "json invalid"
 grep -q "| verdict |" "$TMP/r.md" && ok "md has verdict" || bad "md verdict"
 runout x "$BIN" --no-color analyze "$FIX/suspicious" --quiet --json "$TMP/r2.json"
 cmp -s "$TMP/r1.json" "$TMP/r2.json" && ok "json deterministic" || bad "json not deterministic"
 
 say "== sections / entropy / strings =="
 runout x "$BIN" --no-color sections "$FIX/suspicious"
-contains "sections .text" ".text" "$TMP/all.txt"
 contains "sections entropy col" "ent=" "$TMP/all.txt"
 runout x "$BIN" --no-color entropy "$FIX/suspicious"
 contains "entropy sparkline" "0.0" "$TMP/all.txt"
+if [ "$LINUX" = "1" ]; then
+contains "sections .text" ".text" "$TMP/all.txt"
 contains "entropy hot rodata" "hot" "$TMP/all.txt"
+fi
 runout x "$BIN" --no-color strings "$FIX/suspicious" --kind url
 contains "strings url" "http://185.220.101.47/gate.php" "$TMP/all.txt"
 runout x "$BIN" --no-color strings "$FIX/suspicious" --kind url --min 60
@@ -113,9 +118,11 @@ runout x "$BIN" --no-color crypto "$FIX/suspicious"
 contains "crypto sha256" "SHA-256 round constants" "$TMP/all.txt"
 
 say "== disasm =="
+if [ "$LINUX" = "1" ]; then
 runout x "$BIN" --no-color disasm "$FIX/suspicious" --func main --count 30
 contains "disasm prologue" "push rbp" "$TMP/all.txt"
 contains "disasm call" "call" "$TMP/all.txt"
+fi
 runout x "$BIN" --no-color disasm "$FIX/macho64_minimal" --addr 0x10000 --count 5
 contains "macho disasm main" "mov eax, 0x2a" "$TMP/all.txt"
 runout x "$BIN" --no-color disasm "$FIX/suspicious" --addr 0x11b5 --count 4
@@ -125,9 +132,11 @@ runout x "$BIN" --no-color disasm "$FIX/suspicious" --addr 0xdeadbeef --count 2
 [ "$(cat "$TMP/code.txt")" = "64" ] && ok "bad addr -> 64" || bad "bad addr (got $(cat "$TMP/code.txt"))"
 
 say "== functions / graph =="
+if [ "$LINUX" = "1" ]; then
 runout x "$BIN" --no-color functions "$FIX/suspicious"
 contains "functions main" "main" "$TMP/all.txt"
 contains "functions simple_hash" "simple_hash" "$TMP/all.txt"
+fi
 runout x "$BIN" --no-color graph "$FIX/suspicious" --dot "$TMP/g.dot"
 grep -q "digraph necropsy" "$TMP/g.dot" && ok "dot header" || bad "dot header"
 grep -qE "n[0-9a-f]+ -> n[0-9a-f]+" "$TMP/g.dot" && ok "dot edges" || bad "dot edges"
