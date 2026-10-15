@@ -1,0 +1,39 @@
+name: ci
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  test:
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, macos-latest]
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: jiro4989/setup-nim-action@v2
+        with:
+          nim-version: '2.2.4'
+      - name: build
+        run: nim c -d:release --mm:orc -o:bin/necropsy src/necropsy.nim
+      - name: e2e
+        run: bash test/e2e_local.sh
+
+  windows:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: jiro4989/setup-nim-action@v2
+        with:
+          nim-version: '2.2.4'
+      - name: build
+        shell: pwsh
+        run: nim c -d:release --mm:orc -o:bin/necropsy.exe src/necropsy.nim
+      - name: smoke
+        shell: pwsh
+        run: |
+          ./bin/necropsy.exe version
+          ./bin/necropsy.exe help | Select-String "post-mortem"
+          exit 0
