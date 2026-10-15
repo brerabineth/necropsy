@@ -1,0 +1,10 @@
+bin/
+nimcache/
+*.o
+test/fixtures/benign
+test/fixtures/suspicious
+test/fixtures/pe64_minimal.exe
+test/fixtures/macho64_minimal
+test/fixtures/corrupt_truncated.elf
+test/fixtures/random.bin
+test/fixtures/empty.bin
