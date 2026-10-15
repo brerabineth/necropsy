@@ -119,7 +119,8 @@ contains "disasm call" "call" "$TMP/all.txt"
 runout x "$BIN" --no-color disasm "$FIX/macho64_minimal" --addr 0x10000 --count 5
 contains "macho disasm main" "mov eax, 0x2a" "$TMP/all.txt"
 runout x "$BIN" --no-color disasm "$FIX/suspicious" --addr 0x11b5 --count 4
-grep -q "0x00000000000011b9" "$TMP/all.txt" && ok "disasm advances" || bad "disasm advance"
+NG=$(grep -cE "^  0x[0-9a-f]{16} " "$TMP/all.txt")
+[ "$NG" -ge 4 ] && ok "disasm advances" || bad "disasm advance (got $NG insns)"
 runout x "$BIN" --no-color disasm "$FIX/suspicious" --addr 0xdeadbeef --count 2
 [ "$(cat "$TMP/code.txt")" = "64" ] && ok "bad addr -> 64" || bad "bad addr (got $(cat "$TMP/code.txt"))"
 
