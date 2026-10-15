@@ -45,7 +45,7 @@ jobs:
       - name: build macos-x64 (cross from arm64 runner)
         if: matrix.xarch == 'x86_64'
         run: >
-          nim c -d:release --mm:orc --cpu:amd64 --os:macosx64 --cc:clang
+          nim c -d:release --mm:orc --cpu:amd64 --cc:clang
           --clang.exe="clang" --clang.linkerexe="clang"
           --passC:"-arch x86_64" --passL:"-arch x86_64"
           -o:necropsy-macos-x64 src/necropsy.nim
@@ -53,7 +53,11 @@ jobs:
         if: matrix.cross != 'aarch64' && matrix.xarch != 'x86_64'
         shell: bash
         run: nim c -d:release --mm:orc -o:"necropsy-${{ matrix.target }}${{ matrix.exe }}" src/necropsy.nim
+      - name: validate cross target
+        if: matrix.cross == 'aarch64'
+        run: file necropsy-linux-aarch64 | grep -q "aarch64"
       - name: smoke
+        if: matrix.cross != 'aarch64'
         shell: bash
         run: ./necropsy-${{ matrix.target }}${{ matrix.exe }} version
       - uses: actions/upload-artifact@v4
