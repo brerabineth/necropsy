@@ -93,10 +93,12 @@ cmp -s "$TMP/r1.json" "$TMP/r2.json" && ok "json deterministic" || bad "json not
 say "== sections / entropy / strings =="
 runout x "$BIN" --no-color sections "$FIX/suspicious"
 contains "sections entropy col" "ent=" "$TMP/all.txt"
+if [ "$LINUX" = "1" ]; then
+contains "sections .text" ".text" "$TMP/all.txt"
+fi
 runout x "$BIN" --no-color entropy "$FIX/suspicious"
 contains "entropy sparkline" "0.0" "$TMP/all.txt"
 if [ "$LINUX" = "1" ]; then
-contains "sections .text" ".text" "$TMP/all.txt"
 contains "entropy hot rodata" "hot" "$TMP/all.txt"
 fi
 runout x "$BIN" --no-color strings "$FIX/suspicious" --kind url
